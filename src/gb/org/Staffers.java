@@ -23,7 +23,6 @@ public class Staffers implements Iterable<User> {
     }
 
     private User findFirst() {
-        User fUser;
         for (User u : users) {
             if (u.predUser == null) {
                 return u;
@@ -34,13 +33,11 @@ public class Staffers implements Iterable<User> {
     }
 
     private User findLast() {
-        User lUser;
         for (User u : users) {
             if (u.nextUser == null) {
                 return u;
             }
         }
-        //        Stream<User> user = users.stream().filter(s->s.predUser==null);
         return null;
     }
 
@@ -51,6 +48,7 @@ public class Staffers implements Iterable<User> {
         }
         User fUser = findFirst();
         u.nextUser = fUser;
+        u.predUser = null;
         fUser.predUser = u;
         users.add(users.size(), u);
     }
@@ -67,16 +65,21 @@ public class Staffers implements Iterable<User> {
     }
 
     public void pasteAfter(User u, User au) {
-        if (users.size()==0){
-            users.add(0,u);
+        if (users.size() == 0) {
+            users.add(0, u);
             return;
         }
         int indAfter = findUser(au);
-        User tu = users.get(indAfter).nextUser;
+        User un = users.get(indAfter).nextUser;
+        int indNext = users.indexOf(un);
+        if (indNext == -1) {
+            pasteEnd(u);
+            return;
+        }
         users.get(indAfter).nextUser = u;
         u.predUser = users.get(indAfter);
-        users.get(indAfter).nextUser.predUser = u;
-        u.nextUser= users.get(indAfter).nextUser;
+        users.get(indNext).predUser = u;
+        u.nextUser = users.get(indNext);
 
         users.add(users.size(), u);
     }
@@ -88,16 +91,24 @@ public class Staffers implements Iterable<User> {
     }
 
     private class UserIterator implements Iterator<User> {
-        private int currentIndex = 0;
+        int fIndex = findUser(findFirst());
+        boolean hasElement = true;
+        private int currentIndex = fIndex;
 
         @Override
         public boolean hasNext() {
-            return users.get(currentIndex).nextUser != null;
+            boolean res = hasElement;
+            if (hasElement && users.get(currentIndex).nextUser == null) {
+                hasElement = false;
+            }
+            return res;
         }
 
         @Override
         public User next() {
-            return users.get(currentIndex++).nextUser;
+            User res = users.get(currentIndex);
+            currentIndex = users.indexOf(users.get(currentIndex).nextUser);
+            return res;
         }
     }
 
